@@ -22,6 +22,8 @@ func (fs *Filesystem) TarfsEnabled() bool {
 }
 
 func (fs *Filesystem) PrepareTarfsLayer(ctx context.Context, labels map[string]string, snapshotID, upperDirPath string) error {
+
+	log.L.Infof("KS: Perpare tarfs Layer , upperDirPath : %s, labels: %s", upperDirPath, labels)
 	ref, ok := labels[snpkg.TargetRefLabel]
 	if !ok {
 		return errors.Errorf("not found image reference label")
@@ -81,4 +83,5 @@ func (fs *Filesystem) GetTarfsImageDiskFilePath(id string) (string, error) {
 		return "", errors.New("tarfs mode is not enabled")
 	}
 	return fs.tarfsMgr.ImageDiskFilePath(id), nil
+	//return "/tmp/image.disk", nil
 }

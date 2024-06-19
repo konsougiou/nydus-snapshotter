@@ -104,12 +104,13 @@ func (o *snapshotter) remoteMountWithExtraOptions(ctx context.Context, s storage
 func (o *snapshotter) mountWithKataVolume(ctx context.Context, id string, overlayOptions []string) ([]mount.Mount, error) {
 	hasVolume := false
 	rafs := rafs.RafsGlobalCache.Get(id)
+	log.L.Infof("mountWithKataVolume %s", rafs)
 	if rafs == nil {
 		return []mount.Mount{}, errors.Errorf("failed to find RAFS instance for snapshot %s", id)
 	}
 
 	// Insert Kata volume for proxy
-	if label.IsNydusProxyMode(rafs.Annotations) {
+	if label.IsNydusProxyMode(rafs.Annotations) || true {
 		options, err := o.mountWithProxyVolume(*rafs)
 		if err != nil {
 			return []mount.Mount{}, errors.Wrapf(err, "create kata volume for proxy")
@@ -148,8 +149,16 @@ func (o *snapshotter) mountWithKataVolume(ctx context.Context, id string, overla
 }
 
 func (o *snapshotter) mountWithProxyVolume(rafs rafs.Rafs) ([]string, error) {
+	log.L.Infof("mountWithProxyVolume %s", rafs)
 	options := []string{}
-	for k, v := range rafs.Annotations {
+
+	guest_pull_annotations := map[string]string{
+		"containerd.io/snapshot/cri.layer-digest": "sha256:2840428c7e50a04ef18db53dcca1b9045b612780c9c07df58e69faaf82ff592d",
+		"containerd.io/snapshot/nydus-proxy-mode": "true",
+	}
+
+	//for k, v := range rafs.Annotations {
+	for k, v := range guest_pull_annotations {
 		options = append(options, fmt.Sprintf("%s=%s", k, v))
 	}
 
@@ -158,7 +167,8 @@ func (o *snapshotter) mountWithProxyVolume(rafs rafs.Rafs) ([]string, error) {
 		Source:     "",
 		FSType:     "",
 		Options:    options,
-		ImagePull:  &ImagePullVolume{Metadata: rafs.Annotations},
+		ImagePull:  &ImagePullVolume{Metadata: guest_pull_annotations},
+		//ImagePull:  &ImagePullVolume{Metadata: rafs.Annotations},
 	}
 	if !volume.Validate() {
 		return []string{}, errors.Errorf("got invalid kata volume, %v", volume)
@@ -175,6 +185,8 @@ func (o *snapshotter) mountWithProxyVolume(rafs rafs.Rafs) ([]string, error) {
 
 func (o *snapshotter) mountWithTarfsVolume(rafs rafs.Rafs, blobID string) ([]string, error) {
 	var volume *KataVirtualVolume
+
+	log.L.Infof("mountWithTarfsVolume %s", rafs)
 
 	if info, ok := rafs.Annotations[label.NydusImageBlockInfo]; ok {
 		path, err := o.fs.GetTarfsImageDiskFilePath(blobID)

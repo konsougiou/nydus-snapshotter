@@ -28,6 +28,8 @@ func chooseProcessor(ctx context.Context, logger *logrus.Entry,
 	storageLocater func() string) (_ func() (bool, []mount.Mount, error), target string, err error) {
 	var handler func() (bool, []mount.Mount, error)
 
+	logger.Infof("KS: Choose processor %s, %s", s, labels)
+
 	// Handler to prepare a directory for containerd to download and unpacking layer.
 	defaultHandler := func() (bool, []mount.Mount, error) {
 		mounts, err := sn.mountNative(ctx, labels, s)
